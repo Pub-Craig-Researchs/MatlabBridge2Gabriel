@@ -1,0 +1,23 @@
+{
+    "active_profile": "deepseek",
+    "profiles": {
+        "deepseek": {
+            "API_KEY": "sk-your-deepseek-api-key"",
+            "BASE_URL": "https://api.deepseek.com",
+            "MODEL": "deepseek-chat",
+            "N_PARALLELS": 5
+        },
+        "openai": {
+            "API_KEY": "sk-your-openai-api-key",
+            "BASE_URL": "https://api.openai.com/v1",
+            "MODEL": "gpt-5.2",
+            "N_PARALLELS": 100
+        },
+        "local_vllm": {
+            "API_KEY": "sk-no-key-needed",
+            "BASE_URL": "http://localhost:8000/v1",
+            "MODEL": "meta-llama/Meta-Llama-model_name",
+            "N_PARALLELS": 10
+        }
+    }
+}
