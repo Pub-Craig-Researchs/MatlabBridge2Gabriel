@@ -1,0 +1,117 @@
+{% macro single_entry(modality, text) %}
+{% if modality == "text" %}
+BEGIN TEXT ENTRY
+{{ text }}
+END TEXT ENTRY
+Read entire text content carefully—start, middle, end. Do not skim; comprehend whole text deeply, including subtleties buried deep in the content.
+{% elif modality == "image" %}
+Carefully consider and analyze the provided image content. Comprehend it fully, both big picture and relevant subtleties.
+{% elif modality == "audio" %}
+Carefully consider and analyze the provided audio content. Comprehend it fully, both big picture and relevant subtleties. Pay close attention to both the content as well as the tone/style of the audio, and the sonic qualities of the content's presentation.
+{% elif modality == "pdf" %}
+Carefully consider and analyze the provided PDF content. Comprehend it fully, both big picture and relevant subtleties across the entire document.
+{% elif modality == "entity" %}
+Entity: {{ text }}
+Use your prodigious internal knowledge on the item/entity "{{ text }}".
+Comprehensively consider every relevant detail, both big picture and subtleties.
+Consider "{{ text }}" as the content to be analyzed.
+{% elif modality == "web" %}
+Entity: {{ text }}
+Comprehensively explore the web for all relevant information on the item/entity "{{ text }}".
+Ensure you collect a highly truthful, accurate, comprehensive, and representative picture of "{{ text }}" from the web.
+Consider "{{ text }}" as the content to be analyzed, fully grounded in the info you find on the web.
+Thoroughly research "{{ text }}" on the web; creatively use different search approaches; gather as much info as possible to deeply characterize the relevant aspects of "{{ text }}".
+Crucial: ONLY use the direct info you find on the web to perform your analysis. Collect the info then dispassionately analyze it with no preconceived notions.
+{% endif %}
+{% endmacro %}
+
+{% macro pair_entries(modality, entry_square, entry_circle, circle_first=False) %}
+{% if modality == "text" %}
+Consider the following two distinct text entries:
+{% if circle_first %}
+BEGIN ENTRY CIRCLE
+{{ entry_circle }}
+END ENTRY CIRCLE
+Above entry ("circle") is distinct from below entry ("square").
+BEGIN ENTRY SQUARE
+{{ entry_square }}
+END ENTRY SQUARE
+{% else %}
+BEGIN ENTRY SQUARE
+{{ entry_square }}
+END ENTRY SQUARE
+Above entry ("square") is distinct from below entry ("circle").
+BEGIN ENTRY CIRCLE
+{{ entry_circle }}
+END ENTRY CIRCLE
+{% endif %}
+
+Read both text entries separately from one another. Process each by itself and fully-start, middle, end.
+Do not skim; comprehend each whole text deeply, including subtleties buried deep in each text entry.
+Understand every nuance before comparing.
+{% elif modality == "image" %}
+{% if circle_first %}
+Two images are provided. **CIRCLE = first image. SQUARE = second image.** Comprehend both fully (overall + fine detail).
+Again, "square" references the second, later image entry; "circle" references the first, earlier image entry.
+Be very clear in your mind that "circle" is the first image and "square" is the second image.
+{% else %}
+Two images are provided. **SQUARE = first image. CIRCLE = second image.** Comprehend both fully (overall + fine detail).
+Again, "circle" references the second, later image entry; "square" references the first, earlier image entry.
+Be very clear in your mind that "square" is the first image and "circle" is the second image.
+{% endif %}
+{% elif modality == "audio" %}
+{% if circle_first %}
+Two audio files are provided. **CIRCLE = first audio recording. SQUARE = second audio recording.** Comprehend both fully (content, style, tone, sonic qualities).
+Again, "square" references the second, later audio entry; "circle" references the first, earlier audio entry.
+Be very clear in your mind that "circle" is the first audio recording and "square" is the second audio recording.
+{% else %}
+Two audio files are provided. **SQUARE = first audio recording. CIRCLE = second audio recording.** Comprehend both fully (content, style, tone, sonic qualities).
+Again, "circle" references the second, later audio entry; "square" references the first, earlier audio entry.
+Be very clear in your mind that "square" is the first audio recording and "circle" is the second audio recording.
+{% endif %}
+{% elif modality == "pdf" %}
+{% if circle_first %}
+Two PDFs are provided. **CIRCLE = first PDF. SQUARE = second PDF.** Comprehend both fully (overall content + fine detail).
+Again, "square" references the second, later PDF entry; "circle" references the first, earlier PDF entry.
+Be very clear in your mind that "circle" is the first PDF and "square" is the second PDF.
+{% else %}
+Two PDFs are provided. **SQUARE = first PDF. CIRCLE = second PDF.** Comprehend both fully (overall content + fine detail).
+Again, "circle" references the second, later PDF entry; "square" references the first, earlier PDF entry.
+Be very clear in your mind that "square" is the first PDF and "circle" is the second PDF.
+{% endif %}
+{% elif modality == "entity" %}
+{% if circle_first %}
+Entity circle: {{ entry_circle }}
+Entity square: {{ entry_square }}
+Use your prodigious internal knowledge on both item/entity square ("{{ entry_square }}") and item/entity circle ("{{ entry_circle }}").
+Comprehensively consider every relevant detail you know about each, both big picture and subtleties.
+Consider "{{ entry_square }}" ("square") and "{{ entry_circle }}" ("circle") as the entries/content to be compared, using your internal knowledge.
+{% else %}
+Entity square: {{ entry_square }}
+Entity circle: {{ entry_circle }}
+Use your prodigious internal knowledge on both item/entity circle ("{{ entry_circle }}") and item/entity square ("{{ entry_square }}").
+Comprehensively consider every relevant detail you know about each, both big picture and subtleties.
+Consider "{{ entry_circle }}" ("circle") and "{{ entry_square }}" ("square") as the entries/content to be compared, using your internal knowledge.
+{% endif %}
+{% elif modality == "web" %}
+{% if circle_first %}
+Entity circle: {{ entry_circle }}
+Entity square: {{ entry_square }}
+Comprehensively explore the web for all relevant information on both item/entity square ("{{ entry_square }}") and item/entity circle ("{{ entry_circle }}").
+Ensure you collect a highly truthful, accurate, comprehensive, and representative picture of each from the web.
+Critical that you search on each entity separately and with equal thoroughness.
+Consider "{{ entry_square }}" ("square") and "{{ entry_circle }}" ("circle") as the entries/content to be compared, fully grounded in the info you find on the web.
+Thoroughly research each entity on the web; creatively use different search approaches; gather as much info as possible to deeply characterize the relevant aspects of both square and circle.
+Crucial: ONLY use the direct info you find on the web to perform your analysis. Collect the info then dispassionately analyze it with no preconceived notions.
+{% else %}
+Entity square: {{ entry_square }}
+Entity circle: {{ entry_circle }}
+Comprehensively explore the web for all relevant information on both item/entity circle ("{{ entry_circle }}") and item/entity square ("{{ entry_square }}").
+Ensure you collect a highly truthful, accurate, comprehensive, and representative picture of each from the web.
+Critical that you search on each entity separately and with equal thoroughness.
+Consider "{{ entry_circle }}" ("circle") and "{{ entry_square }}" ("square") as the entries/content to be compared, fully grounded in the info you find on the web.
+Thoroughly research each entity on the web; creatively use different search approaches; gather as much info as possible to deeply characterize the relevant aspects of both circle and square.
+Crucial: ONLY use the direct info you find on the web to perform your analysis. Collect the info then dispassionately analyze it with no preconceived notions.
+{% endif %}
+{% endif %}
+{% endmacro %}

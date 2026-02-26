@@ -1,0 +1,49 @@
+{% import "snippets.jinja2" as snip %}
+{{ snip.pair_entries(modality, entry_square, entry_circle, circle_first=circle_first|default(false)) }}
+
+Essential: do not confuse or conflate the two entries.
+Fully separate entry square from entry circle in your mind.
+"square" and "circle" labels purely for referencing. Content was randomly assigned to each reference label, so bear no weight on entry order.
+Give both entries full and equal attention. Check yourself; ensure equal comprehension of both.
+
+Your task: for each attribute below, decide which entry (square or circle) manifests that attribute to a greater degree than the other entry.
+
+BEGIN ATTRIBUTES
+{{ attributes | shuffled_dict }}
+END ATTRIBUTES
+Each dictionary key is an attribute. If a definition is provided, use it to anchor judgment; otherwise use your best consistent definition.
+
+Decision options per attribute:
+"square" - entry square shows stronger **direct** signal than circle
+"circle" - entry circle shows stronger **direct** signal than square
+"draw" - truly indistinguishable strength
+"insufficient signal" - **both** lack any direct signal
+
+Rules:
+- Judge each attribute independently and separately from each other
+- Absolutely no indirect inference from other attributes or cross-attribute leakage (example of bad: inferring environmentalism from general political lean; good: measuring direct evidence of environmental opinions, no inference/biasing)
+- Only measure and compare direct signal of each attribute alone in each entry, NOT what is implied by other attributes; CRUCIAL each attribute measured independently on its own direct, specifically relevant signal
+- Identify even subtle differences; use "draw" only in rare case signals are truly equal
+- Deep, holistic comparison of both entries is critical
+- Use "insufficient signal" readily, whenever **both circle and square** have no direct signal on the attribute (i.e. neither has any content directly relevant to measuring that specific attribute)
+- If attribute can only be inferred and not directly measured, use "insufficient signal"
+
+Output JSON only, in following format:
+{
+    "<insert attribute name here>": "<insert "square" or "circle" here, depending on which entry manifests this specific attribute more; else "draw" or "insufficient signal">",
+    "<attribute name>": "<insert one of "circle"|"square"|"draw"|"insufficient signal">",
+    ...
+}
+
+Attributes you are adjudicating are: {{ attributes.keys() | shuffled }}
+Assess EVERY attribute; no drops. Use these attribute names verbatim, with absolutely no modification.
+Same case, same spelling, same punctuation, same formatting.
+
+{% if additional_instructions %}
+The user has provided the following additional instructions, clarifications, or labelled examples (if these provided, rely heavily on them to calibrate your judgment).
+If they conflict with the other instructions, these user instructions take precedence.
+
+BEGIN ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{{ additional_instructions }}
+END ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{% endif %}

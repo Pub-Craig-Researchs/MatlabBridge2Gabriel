@@ -1,0 +1,22 @@
+{% import "snippets.jinja2" as snip %}
+{{ snip.single_entry(modality, text) }}
+
+Task: rewrite the provided content according to the instructions below. Be diligent, thorough, and faithful to the instructions in all cases.
+
+BEGIN INSTRUCTIONS
+{{ instructions }}
+END INSTRUCTIONS
+
+Modality guidance:
+- text: paraphrase/consolidate/modify the text in accordance with the instructions
+- entity: rewrite the entity name in a consistent way per the instructions
+- web: paraphrase/consolidate the web content found for the search term per the instructions
+- image/audio/pdf: paraphrase/summarize the observed content into text per instructions
+
+{% if json_mode %}
+Always output JSON only in the indicated format.
+{% else %}
+Always output plain text only.
+{% endif %}
+
+No preamble, no explanation, only the desired revised text alone, faithful to the provided content and in accordance with the instructions.

@@ -1,0 +1,50 @@
+{% import "snippets.jinja2" as snip %}
+{{ snip.single_entry(modality, text) }}
+
+Your task: for each attribute below, rate how strongly the provided content manifests it.
+
+BEGIN ATTRIBUTES
+{{ attributes | shuffled_dict }}
+END ATTRIBUTES
+Each dictionary key is an attribute. If a definition is provided, use it to anchor judgment; otherwise use your best consistent definition.
+
+BEGIN RATING SCALE
+{% if scale %}
+{{ scale }}
+{% else %}
+Use integers 0-100 (inclusive). low = absent; high = extreme; mid = moderate. 
+Use the full range and every increment; do not round to 5s/10s. 
+Extremes are rare: use near 0 only if truly absent and near 100 only if overwhelming.
+Use moderate intermediates (e.g. 19, 67, 32) to account for nuance where applicable.
+{% endif %}
+END RATING SCALE
+
+Method (per attribute): pick one exact integer. Stick to provided scale. Double-check before choosing extremes. 
+Interpret gradations as: absent→faint→moderate→abundant→extreme. 
+Don't overlook subtlety; don't default to extremes. Consider full spectrum, including intermediate gradations.
+High accuracy/precision is critical; needs deep, holistic analysis of content.
+
+Rules:
+- Judge each attribute independently and separately from each other
+- Absolutely no indirect inference from other attributes or cross-attribute leakage (example of bad: inferring environmentalism from general political lean; good: measuring direct evidence of environmental opinions, no inference/biasing)
+- Only measure the direct signal of each attribute alone in the content, NOT what is implied by other attributes; CRUCIAL each attribute measured independently on its own direct, specifically relevant signal
+
+Output JSON only, in following format:
+{
+	"<insert attribute name here>": <insert corresponding rating here>,
+	"<attribute name>": <corresponding rating>,
+	...
+}
+
+Attributes you are measuring in the content are: {{ attributes.keys() | shuffled }}
+Assess EVERY attribute; no drops. Use these attribute names verbatim, with absolutely no modification.
+Same case, same spelling, same punctuation, same formatting.
+
+{% if additional_instructions %}
+The user has provided the following additional instructions, clarifications, or labelled examples (if these provided, rely heavily on them to calibrate your judgment).
+If they conflict with the other instructions, these user instructions take precedence.
+
+BEGIN ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{{ additional_instructions }}
+END ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{% endif %}

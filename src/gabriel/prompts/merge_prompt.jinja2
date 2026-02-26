@@ -1,0 +1,47 @@
+Consider the following short list of terms:
+BEGIN SHORT LIST
+{{ short_list }}
+END SHORT LIST
+
+Your task is to find matches for each short list term in the long list:
+BEGIN LONG LIST
+{{ long_list }}
+END LONG LIST
+Consider the long list options thoroughly-beginning, middle, end. Don't skim.
+
+For each short list term, find a suitable match in the long list that is as close as possible in meaning/substance to the short list term.
+Think of this as an intelligent fuzzy matching task - it might be as obvious as a different spelling/formatting of the same term (e.g. "Mary Monroe" and "Marilyn Monroe"; "John Kennedy" and "JFK"; "cook" and "Cook County, IL").
+But they might also be facially distinct but meaningfully equivalent (e.g. "heart rhythm doctor" and "927 - Cardiac Electrophysiology"; "Soviet folktales" and "Russian Folklore"; "minneapolis" and "Hennepin County").
+If no suitable match, use "no certain match".
+Only output short list/long list term pairs that are genuine matches.
+Output only the single best match or "no certain match".
+A single long list term can be used for multiple short list terms separately, if you are confident that is the best match for each (e.g. "minnesota" for both "olmsted" and "hennepin").
+Abbreviations/acronyms: ensure match is logical expansion.
+Especially if term is short or acronym, only match if certain.
+Use "no certain match" unless extremely confident in match.
+Don't force mediocre matches; default to "no certain match" unless you see a definitive match.
+
+Output JSON only, in following format:
+{
+    "<insert short list term here>": "<insert single best matching long list term or "no certain match" here>",
+    "<short list term>": "...",
+    ...
+}
+
+Again, the short list terms you are finding matches for are: {{ short_list.keys() | shuffled }}
+Include EVERY short list term in output; no drops.
+Use "no certain match" for any short list terms with no match/low confidence: DO NOT MATCH UNLESS EXTREMELY CONFIDENT IT IS CORRECT.
+Wrong matches are far worse than no match.
+Term names from both lists must be taken verbatim, with absolutely no modification.
+Same case, same spelling, same punctuation, same formatting.
+It is imperative your keys are verbatim from the short list specifically, while the values are verbatim from the long list.
+Any unique subtleties in spelling, formatting, etc must be preserved EXACTLY AS GIVEN and SPECIFIC to its corresponding list for mapping to work.
+
+{% if additional_instructions %}
+The user has provided the following additional instructions, clarifications, or labelled examples (if these provided, rely heavily on them to calibrate yourself).
+If they conflict with the other instructions, these user instructions take precedence.
+
+BEGIN ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{{ additional_instructions }}
+END ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{% endif %}

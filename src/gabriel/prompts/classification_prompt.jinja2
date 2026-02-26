@@ -1,0 +1,50 @@
+{% import "snippets.jinja2" as snip %}
+{% if differentiate %}
+{{ snip.pair_entries(modality, entry_square, entry_circle, circle_first=circle_first|default(false)) }}
+You are specifically looking at features that distinguish the two entries from each other.
+When deciding which labels apply, assess whether the label captures a key difference between the two entries.
+Pay close attention to the specific entry class, square or circle.
+Both directions of the label (square over circle and circle over square) are provided on each attribute; only one can be True, the other must be False.
+Default to both being False unless clear and evident that one applies to the provided entries. Often, neither will apply because the attribute is not present, or is equally present, in which case both must be False.
+Again: for each label pair (same attribute, inverted directions), both can be False (default) or one can be True while other is False. Both cannot be True.
+If one label in a pair concerns circle entries having more of an attribute than square entries, then that label applies/returns True only if the circle entry here has that attribute MORE than the square entry here.
+Insufficient simply for attribute to be present; the specific condition that the provided circle entry manifests the attribute more than the provided square entry must be clearly and evidently true, for this label to return True.
+If instead the square entry manifests the attribute more than the circle entry: then the "circle more than square" label of the pair must return False, while the "square more than circle" label of the pair would return True.
+If the attribute is absent from both square and circle, or is equally present in both, then both paired labels must return the default False.
+Triple check your logic and ensure you apply the correct label of each pair (True for one, False for the other), and default to False for both unless clear and evident that one of the pair is True.
+Evaluate each pair separately from other pairs.
+{% else %}
+{{ snip.single_entry(modality, text) }}
+{% endif %}
+
+Task: For each label below, decide whether it applies to the provided content.
+
+BEGIN LABELS
+{{ attributes | shuffled_dict }}
+END LABELS
+Each key is a label. If a definition is provided, use it to anchor judgment; otherwise use your best consistent definition.
+
+Rules (per label):
+- Output True if label applies to the content; False if not
+- Zero, one, or many labels may apply; mark True for all that apply
+- Independently judge each label; no cross-label inference
+
+Output JSON only, in following format:
+{
+    "<insert label name here>": <insert True if this label applies, False if not>,
+    "<label name>": <insert False|True>,
+    ...
+}
+
+Labels you are evaluating are: {{ attributes.keys() | shuffled }}
+Assess EVERY label (False or True); no drops. Use these label names verbatim, with absolutely no modification.
+Same case, same spelling, same punctuation, same formatting.
+
+{% if additional_instructions %}
+The user has provided the following additional instructions, clarifications, or labelled examples (if these provided, rely heavily on them to calibrate your judgment).
+If they conflict with the other instructions, these user instructions take precedence.
+Important: if user has explicitly asked for only the best label, output True for ONLY the one label that best applies, and False for all others.
+BEGIN ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{{ additional_instructions }}
+END ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{% endif %}

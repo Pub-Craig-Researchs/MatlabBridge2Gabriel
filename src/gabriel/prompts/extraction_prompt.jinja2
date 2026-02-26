@@ -1,0 +1,61 @@
+{% import "snippets.jinja2" as snip %}
+{% if modality is not defined or not modality %}
+{% set modality = "entity" %}
+{% endif %}
+{{ snip.single_entry(modality, text) }}
+
+Your task: for each attribute below, extract the specific information requested (e.g. year of invention, price, death year, product launch date, etc.).
+Provide each value as a string.
+Provide only the extracted datapoint requested in as precise a form as possible.
+Give the datapoint and nothing else; no extra commentary or explanation.
+Whenever possible/relevant, leave it in a purely numeric string form (e.g. "235" not "year is 235" or "235 CE" or "210-250").
+If the information cannot be found or is not known, return placeholder "unknown" (always exactly that word).
+
+BEGIN ATTRIBUTES
+{{ attributes | shuffled_dict }}
+END ATTRIBUTES
+Each attribute key tells you what to extract. If a definition is provided, closely follow it to anchor what you provide; otherwise rely on your best consistent interpretation.
+
+General formatting rules (pay attention to attribute definitions for exact requirements):
+Year: Return years only (e.g. "1984", "629"). Use negative numbers for BCE years (e.g. "-356" not "356 BCE"). Avoid vague year ranges (e.g. "1980s", "early 20th century", "1250-1260"); aim for a single, specific year.
+Date: Use ISO format "YYYY-MM-DD"; drop any extraneous words (e.g. not "June 5, 2020" but "2020-06-05").
+Prices: Don't include any currency symbols or commas (e.g. not "$16.85" but "16.85").
+Names/Places/Other Text: Provide the exact requested phrase without additional commentary (e.g. "Marilyn Monroe", "New York City", "The Beatles", etc.).
+Use the specific value that matches the attribute definition best (e.g. the primary year of invention rather than a range).
+If multiple values apply, choose the single most applicable value - don't list them all.
+Do not round (e.g. not "1860" but "1863", not "100" but "112"). Even if approximating a specific datapoint, don't round or use ranges - provide the best possible exact value.
+Consistent formatting is critical; stick to the attribute definition and these rules.
+If asked to extract text direct from content, be complete and verbatim.
+If any task is not possible, return "unknown" for that attribute.
+
+Output JSON only, in following format:
+{
+    "<insert first entity name here>":
+    {
+        "<insert attribute name here>": "<insert corresponding extracted value or "unknown" here>",
+        "<attribute name>": "<extracted value or unknown>",
+        ...
+    },
+    "<second entity name>":
+    {
+        "<attribute name>": "<extracted value or unknown>",
+        ...
+    },
+    ...
+}
+
+Usually whole content is just one unified entity, so fill only first entity section with all attributes for whole content (no other entity sections).
+But if input clearly contains multiple relevant distinct entities (e.g. catalog with several product listings), output one top-level entry per entity. Use a short, informative identifier as each entity’s key, and place that entity’s unique extracted attributes inside its nested dictionary.
+
+Attributes you are extracting info on are: {{ attributes.keys() | shuffled }}
+Assess EVERY attribute; use "unknown" if needed but no drops. Use these attribute names verbatim, with absolutely no modification.
+Same case, same spelling, same punctuation, same formatting.
+
+{% if additional_instructions %}
+The user has provided the following additional instructions, clarifications, or labelled examples (if these provided, rely heavily on them to calibrate yourself).
+If they conflict with the other instructions, these user instructions take precedence.
+
+BEGIN ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{{ additional_instructions }}
+END ADDITIONAL INSTRUCTIONS/CLARIFICATIONS
+{% endif %}
