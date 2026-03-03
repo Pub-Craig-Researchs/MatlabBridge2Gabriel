@@ -100,8 +100,12 @@ else
 end
 
 % 3. Python Environment Setup
+% Add project root (for gabriel_wrapper.py) and src/ (for gabriel package)
+scriptDir = fileparts(mfilename("fullpath"));
+srcDir = fullfile(scriptDir, "src");
 P = py.sys.path;
-if count(P, pwd) == 0, insert(P, int32(0), pwd); end
+if count(P, scriptDir) == 0, insert(P, int32(0), scriptDir); end
+if count(P, srcDir) == 0, insert(P, int32(0), srcDir); end
 
 % 4. Call GABRIEL Wrapper
 pyKwargsCell = {'reset_files', p.Results.ResetFiles, 'n_runs', int32(p.Results.NRuns)};
@@ -162,3 +166,4 @@ for i = 1:length(mat_keys)
     end
 end
 end
+
