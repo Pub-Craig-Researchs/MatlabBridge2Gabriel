@@ -33,6 +33,7 @@ function T = GabrielBridge(data, attributes, varargin)
 %     T = gabriel_rate({'Good'}, labels, 'Task', 'classify');
 
 % 1. Parse Inputs
+scriptDir = fileparts(mfilename("fullpath"));
 p = inputParser;
 p.KeepUnmatched = true;
 addRequired(p, 'data');
@@ -42,7 +43,7 @@ addParameter(p, 'ColumnName', '', @ischar);
 addParameter(p, 'CircleColumnName', '', @ischar);
 addParameter(p, 'SquareColumnName', '', @ischar);
 addParameter(p, 'SaveDir', './gabriel_results', @ischar);
-addParameter(p, 'ConfigPath', fullfile(pwd, 'api_config.json'), @ischar);
+addParameter(p, 'ConfigPath', fullfile(scriptDir, 'api_config.json'), @ischar);
 addParameter(p, 'ProfileName', '', @ischar);
 addParameter(p, 'NRuns', 1, @isnumeric);
 addParameter(p, 'NParallels', [], @isnumeric);
@@ -101,11 +102,13 @@ end
 
 % 3. Python Environment Setup
 % Add project root (for gabriel_wrapper.py) and src/ (for gabriel package)
-scriptDir = fileparts(mfilename("fullpath"));
+% scriptDir already computed above (before inputParser)
 srcDir = fullfile(scriptDir, "src");
+gabDir = fullfile(scriptDir, "src\gabriel");
 P = py.sys.path;
 if count(P, scriptDir) == 0, insert(P, int32(0), scriptDir); end
 if count(P, srcDir) == 0, insert(P, int32(0), srcDir); end
+if count(P, gabDir) == 0, insert(P, int32(0), gabDir); end
 
 % 4. Call GABRIEL Wrapper
 pyKwargsCell = {'reset_files', p.Results.ResetFiles, 'n_runs', int32(p.Results.NRuns)};
@@ -166,4 +169,3 @@ for i = 1:length(mat_keys)
     end
 end
 end
-

@@ -125,22 +125,46 @@ def run_gabriel_task(task_type, data_dict, attributes, save_dir, config_path="ap
         elif task_type in ("rate", "extract", "rank", "ideate"):
             final_kwargs["attributes"] = attributes
 
+        # HACK: Intercept json_mode to bypass RateConfig TypeError locally
+        json_mode_override = final_kwargs.pop("json_mode", None)
+
+        
+        # We need to assemble the arguments to gabriel function call
+        call_kwargs = dict(final_kwargs)
+        if json_mode_override is not None:
+             call_kwargs["json_mode"] = json_mode_override
+
+
         # Specialized logic for tasks
         if task_type in ("seed", "ideate"):
             # These tasks take 'instructions' or 'topic' as the first positional arg
             first_arg = attributes
             if isinstance(attributes, dict) and len(attributes) == 1:
                 first_arg = list(attributes.values())[0]
-            return await task_func(first_arg, **final_kwargs)
+            return await task_func(first_arg, **call_kwargs)
         
         elif task_type in ("compare", "discover"):
-            return await task_func(df=df, **final_kwargs)
+            return await task_func(df=df, **call_kwargs)
         
         else:
-            return await task_func(df=df, column_name=column_name, **final_kwargs)
+            return await task_func(df=df, column_name=column_name, **call_kwargs)
 
     # Execute the async function
     result = asyncio.run(_run_task())
+
+    # HACK: 显式关闭缓存的异步客户端以避免 Event loop is closed 的报错
+    try:
+        from gabriel.utils import openai_utils
+        # 对于所有缓存的 AsyncClient，手动调用其异步的 aclose() 把它关停
+        async def close_clients():
+            for client in openai_utils._clients_async.values():
+                await client.close()
+            openai_utils._clients_async.clear()
+        
+        asyncio.run(close_clients())
+    except Exception:
+        pass
+
 
     # result might be a dict for 'discover', convert to serializable if needed
     if isinstance(result, dict):
