@@ -146,6 +146,7 @@ async def rate(
     reasoning_effort: Optional[str] = None,
     search_context_size: str = "medium",
     template_path: Optional[str] = None,
+    json_mode: Optional[bool] = None,
     response_fn: Optional[Callable[..., Awaitable[Any]]] = None,
     get_all_responses_fn: Optional[Callable[..., Awaitable[pd.DataFrame]]] = None,
     **cfg_kwargs,
@@ -219,6 +220,12 @@ async def rate(
         base_name = os.path.splitext(file_name)[0]
         final_path = os.path.join(save_dir, f"{base_name}_cleaned.csv")
         return _load_cached_dataframe(final_path, task_name="Rate")
+    extracted_json_mode = cfg_kwargs.pop("json_mode", json_mode)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("topic", None)
+    cfg_kwargs.pop("labels", None)
     cfg = RateConfig(
         attributes=attributes,
         save_dir=save_dir,
@@ -239,6 +246,7 @@ async def rate(
         reset_files=reset_files,
         response_fn=response_fn,
         get_all_responses_fn=get_all_responses_fn,
+        json_mode=extracted_json_mode,
     )
 
 async def extract(
@@ -328,6 +336,12 @@ async def extract(
         base_name = os.path.splitext(file_name)[0]
         final_path = os.path.join(save_dir, f"{base_name}_cleaned.csv")
         return _load_cached_dataframe(final_path, task_name="Extract")
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("topic", None)
+    cfg_kwargs.pop("labels", None)
     cfg = ExtractConfig(
         attributes=attributes,
         save_dir=save_dir,
@@ -341,13 +355,12 @@ async def extract(
         reasoning_effort=reasoning_effort,
         **cfg_kwargs,
     )
+    _run_kwargs = dict(reset_files=reset_files, types=types,
+                       response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
     return await Extract(cfg, template_path=template_path).run(
-        df,
-        column_name,
-        reset_files=reset_files,
-        types=types,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+        df, column_name, **_run_kwargs,
     )
 
 
@@ -433,6 +446,12 @@ async def seed(
 
     save_dir = os.path.expandvars(os.path.expanduser(save_dir))
     os.makedirs(save_dir, exist_ok=True)
+    extracted_json_mode = response_kwargs.pop("json_mode", None)
+    response_kwargs.pop("n_runs", None)
+    response_kwargs.pop("n_attributes_per_run", None)
+    response_kwargs.pop("instructions", None)
+    response_kwargs.pop("topic", None)
+    response_kwargs.pop("labels", None)
     cfg = SeedConfig(
         instructions=instructions,
         save_dir=save_dir,
@@ -448,13 +467,12 @@ async def seed(
         reasoning_effort=reasoning_effort,
     )
     task = Seed(cfg, template_path=template_path)
-    return await task.run(
-        existing_entities=existing_entities,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
-        **response_kwargs,
-    )
+    _run_kwargs = dict(existing_entities=existing_entities, reset_files=reset_files,
+                       response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    _run_kwargs.update(response_kwargs)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
+    return await task.run(**_run_kwargs)
 
 
 async def classify(
@@ -551,6 +569,11 @@ async def classify(
         base_name = os.path.splitext(file_name)[0]
         final_path = os.path.join(save_dir, f"{base_name}_cleaned.csv")
         return _load_cached_dataframe(final_path, task_name="Classify")
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("topic", None)
     cfg = ClassifyConfig(
         labels=labels,
         save_dir=save_dir,
@@ -567,14 +590,12 @@ async def classify(
         search_context_size=search_context_size,
         **cfg_kwargs,
     )
+    _run_kwargs = dict(circle_column_name=circle_column_name, square_column_name=square_column_name,
+                       reset_files=reset_files, response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
     return await Classify(cfg, template_path=template_path).run(
-        df,
-        column_name,
-        circle_column_name=circle_column_name,
-        square_column_name=square_column_name,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+        df, column_name, **_run_kwargs,
     )
 
 
@@ -611,8 +632,10 @@ async def ideate(
     seed_run_kwargs: Optional[Dict[str, Any]] = None,
     deduplicate_run_kwargs: Optional[Dict[str, Any]] = None,
     template_path: Optional[str] = None,
+    json_mode: Optional[bool] = None,
     response_fn: Optional[Callable[..., Awaitable[Any]]] = None,
     get_all_responses_fn: Optional[Callable[..., Awaitable[pd.DataFrame]]] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Generates many novel scientific theories and filters the cream of the crop.
 
@@ -712,6 +735,8 @@ async def ideate(
         return updated
 
     generation_kwargs = _with_callable_overrides(generation_kwargs)
+    if json_mode is not None:
+        generation_kwargs["json_mode"] = json_mode
     rank_run_kwargs = _with_callable_overrides(rank_run_kwargs)
     rate_run_kwargs = _with_callable_overrides(rate_run_kwargs)
     seed_run_kwargs = _with_callable_overrides(seed_run_kwargs)
@@ -825,6 +850,12 @@ async def deidentify(
         base_name = os.path.splitext(file_name)[0]
         final_path = os.path.join(save_dir, f"{base_name}_cleaned.csv")
         return _load_cached_dataframe(final_path, task_name="Deidentify")
+    print(f"DEBUG (SRC): cfg_kwargs before pop: {list(cfg_kwargs.keys())}")
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("topic", None)
     cfg = DeidentifyConfig(
         save_dir=save_dir,
         file_name=file_name,
@@ -837,14 +868,12 @@ async def deidentify(
         use_existing_mappings_only=use_existing_mappings_only,
         **cfg_kwargs,
     )
-    return await Deidentifier(cfg, template_path=template_path).run(
-        df,
-        column_name,
-        grouping_column=grouping_column,
-        mapping_column=mapping_column,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+    _run_kwargs = dict(grouping_column=grouping_column, mapping_column=mapping_column,
+                       reset_files=reset_files, response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
+    return await Deidentify(cfg, template_path=template_path).run(
+        df, column_name, **_run_kwargs,
     )
 
 async def rank(
@@ -970,6 +999,11 @@ async def rank(
             base_name = os.path.splitext(file_name)[0]
             final_path = os.path.join(save_dir, f"{base_name}_final.csv")
         return _load_cached_dataframe(final_path, task_name="Rank")
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("labels", None)
+    cfg_kwargs.pop("topic", None)
     cfg = RankConfig(
         attributes=attributes,
         n_rounds=n_rounds,
@@ -1002,13 +1036,12 @@ async def rank(
         primer_center=primer_center,
         **cfg_kwargs,
     )
+    _run_kwargs = dict(id_column=id_column, reset_files=reset_files,
+                       response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
     result_df = await Rank(cfg, template_path=template_path).run(
-        df,
-        column_name,
-        id_column=id_column,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+        df, column_name, **_run_kwargs,
     )
 
     # By default only expose the z-score columns (attribute names without suffixes)
@@ -1122,7 +1155,9 @@ async def codify(
         final_path = os.path.join(save_dir, "coded_passages.csv")
         return _load_cached_dataframe(final_path, task_name="Codify")
     cfg_kwargs = dict(cfg_kwargs)
-    
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
     cfg = CodifyConfig(
         save_dir=save_dir,
         file_name=file_name,
@@ -1137,14 +1172,12 @@ async def codify(
         completion_classifier_instructions=completion_classifier_instructions,
         **cfg_kwargs,
     )
+    _run_kwargs = dict(categories=categories, additional_instructions=additional_instructions,
+                       reset_files=reset_files, response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
     return await Codify(cfg, template_path=template_path).run(
-        df,
-        column_name,
-        categories=categories,
-        additional_instructions=additional_instructions,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+        df, column_name, **_run_kwargs,
     )
 
 
@@ -1243,6 +1276,12 @@ async def paraphrase(
         base_name = os.path.splitext(file_name)[0]
         final_path = os.path.join(save_dir, f"{base_name}_cleaned.csv")
         return _load_cached_dataframe(final_path, task_name="Paraphrase")
+    cfg_kwargs = dict(cfg_kwargs)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("topic", None)
+    cfg_kwargs.pop("labels", None)
     cfg = ParaphraseConfig(
         instructions=instructions,
         revised_column_name=revised_column_name,
@@ -1348,6 +1387,10 @@ async def compare(
     os.makedirs(save_dir, exist_ok=True)
     if df is None:
         return _load_cached_dataframe(None, task_name="Compare")
+    cfg_kwargs = dict(cfg_kwargs)
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
     cfg = CompareConfig(
         save_dir=save_dir,
         file_name=file_name,
@@ -1360,13 +1403,14 @@ async def compare(
         reasoning_effort=reasoning_effort,
         **cfg_kwargs,
     )
+    _run_kwargs = dict(reset_files=reset_files, response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
     return await Compare(cfg, template_path=template_path).run(
         df,
         circle_column_name,
         square_column_name,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+        **_run_kwargs,
     )
 
 
@@ -1444,6 +1488,10 @@ async def bucket(
     if df is None:
         final_path = os.path.join(save_dir, file_name)
         return _load_cached_dataframe(final_path, task_name="Bucket")
+    cfg_kwargs = dict(cfg_kwargs)
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("n_runs", None)
+    cfg_kwargs.pop("n_attributes_per_run", None)
     cfg = BucketConfig(
         bucket_count=bucket_count,
         save_dir=save_dir,
@@ -1455,12 +1503,12 @@ async def bucket(
         reasoning_effort=reasoning_effort,
         **cfg_kwargs,
     )
+    _run_kwargs = dict(reset_files=reset_files,
+                       response_fn=response_fn, get_all_responses_fn=get_all_responses_fn)
+    if extracted_json_mode is not None:
+        _run_kwargs["json_mode"] = extracted_json_mode
     return await Bucket(cfg, template_path=template_path).run(
-        df,
-        column_name,
-        reset_files=reset_files,
-        response_fn=response_fn,
-        get_all_responses_fn=get_all_responses_fn,
+        df, column_name, **_run_kwargs,
     )
 
 
@@ -1564,11 +1612,10 @@ async def discover(
 
     save_dir = os.path.expandvars(os.path.expanduser(save_dir))
     os.makedirs(save_dir, exist_ok=True)
-    if df is None:
-        raise ValueError(
-            "Discover does not persist a final output DataFrame; "
-            "provide a DataFrame to run the task."
-        )
+    extracted_json_mode = cfg_kwargs.pop("json_mode", None)
+    cfg_kwargs.pop("labels", None)
+    cfg_kwargs.pop("instructions", None)
+    cfg_kwargs.pop("topic", None)
     cfg = DiscoverConfig(
         save_dir=save_dir,
         model=model,

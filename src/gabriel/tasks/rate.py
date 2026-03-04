@@ -207,6 +207,10 @@ class Rate:
         kwargs.setdefault("web_search", self.cfg.modality == "web")
         kwargs.setdefault("search_context_size", self.cfg.search_context_size)
 
+        # Pop json_mode so it is only passed as an explicit keyword argument
+        # to get_all_responses and not duplicated via **kwargs.
+        json_mode_val = kwargs.pop("json_mode", self.cfg.modality != "audio")
+
         if not isinstance(self.cfg.n_runs, int) or self.cfg.n_runs < 1:
             raise ValueError("n_runs must be an integer >= 1")
 
@@ -270,7 +274,7 @@ class Rate:
             model=self.cfg.model,
             save_path=csv_path,
             use_dummy=self.cfg.use_dummy,
-            json_mode=self.cfg.modality != "audio",
+            json_mode=json_mode_val,
             reset_files=reset_files,
             reasoning_effort=self.cfg.reasoning_effort,
             **kwargs,

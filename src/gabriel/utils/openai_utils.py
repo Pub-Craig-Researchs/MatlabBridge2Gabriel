@@ -153,17 +153,30 @@ def _get_client(
     """
 
     url = base_url or os.getenv("OPENAI_BASE_URL")
+    current_key = os.getenv("OPENAI_API_KEY")
     client = _clients_async.get(url)
+    
+    # Check if the cached client exists and if its API key matches the current one
+    if client is not None:
+        if getattr(client, "api_key", None) != current_key:
+            client = None  # Force recreation if key changed
+            
     if client is None:
         kwargs: Dict[str, Any] = {}
         if url:
             kwargs["base_url"] = url
+        if current_key:
+            kwargs["api_key"] = current_key
+        _is_openai_url = not url or "api.openai.com" in url
         if httpx is not None:
             try:
-                kwargs.setdefault(
-                    "timeout",
-                    httpx.Timeout(connect=10.0, read=None, write=None, pool=None),
-                )
+                timeout_cfg = httpx.Timeout(connect=10.0, read=None, write=None, pool=None)
+                kwargs.setdefault("timeout", timeout_cfg)
+                # For non-OpenAI providers (LM Studio, local LLMs), the SDK's
+                # internal AsyncHttpxClientWrapper can cause 502 errors.  Pass a
+                # plain httpx.AsyncClient to work around this.
+                if not _is_openai_url:
+                    kwargs["http_client"] = httpx.AsyncClient(timeout=timeout_cfg)
             except Exception:
                 # Fall back to the SDK default if constructing the timeout fails
                 pass
@@ -2082,17 +2095,103 @@ async def get_response(
             params["background"] = background_argument
         total_needed = max(n, 1)
         start = time.time()
-        raw_new: List[Any] = []
-        new_tasks: List[asyncio.Task] = [
-            asyncio.create_task(
-                client_async.responses.create(
-                    **params, **({"timeout": timeout} if timeout is not None else {})
+        is_openai = not base_url or "api.openai.com" in base_url
+        
+        new_tasks: List[asyncio.Task] = []
+        if is_openai:
+            new_tasks = [
+                asyncio.create_task(
+                    client_async.responses.create(
+                        **params, **({"timeout": timeout} if timeout is not None else {})
+                    )
                 )
-            )
-            for _ in range(total_needed)
-        ]
+                for _ in range(total_needed)
+            ]
+        else:
+            # Fallback for non-OpenAI providers (LM Studio, DeepSeek, etc.)
+            # Use raw httpx to bypass the openai SDK's internal httpx wrapper
+            # which causes 502 errors with local LLM servers.
+            chat_params = {
+                "model": params.get("model"),
+                "messages": params.get("input"),
+                "temperature": params.get("temperature", 0.9),
+            }
+            _mout = params.get("max_output_tokens")
+            if _mout is not None:
+                chat_params["max_tokens"] = _mout
+            _tools = params.get("tools")
+            if _tools:
+                chat_params["tools"] = _tools
+            _tc = params.get("tool_choice")
+            if _tc is not None:
+                chat_params["tool_choice"] = _tc
+            # Map 'text' (JSON mode) to 'response_format'
+            text_param = params.get("text")
+            if isinstance(text_param, dict) and "format" in text_param:
+                _fmt = text_param["format"]
+                # Some OpenAI-compatible providers (like LM Studio) reject "json_object"
+                # in response_format and only accept "json_schema" or "text".
+                # If we encounter "json_object", we suppress it and rely on the
+                # prompt instructions and the robust JSON parser in gabriel.utils.parsing.
+                if _fmt.get("type") == "json_object":
+                    pass
+                else:
+                    chat_params["response_format"] = _fmt
+
+
+            _raw_url = (base_url or os.getenv("OPENAI_BASE_URL", "")).rstrip("/")
+            _raw_endpoint = f"{_raw_url}/chat/completions"
+            _raw_api_key = os.getenv("OPENAI_API_KEY", "")
+            _raw_headers = {
+                "Authorization": f"Bearer {_raw_api_key}",
+                "Content-Type": "application/json",
+            }
+
+            def _sync_chat_completion():
+                """Send a Chat Completions request via requests (urllib3).
+                
+                The openai SDK's httpx client is incompatible with some local
+                LLM servers (e.g. LM Studio) causing 502 errors.  The standard
+                ``requests`` library works reliably, so we use it here and wrap
+                the call with ``asyncio.to_thread`` for async compatibility.
+                """
+                import requests as _requests
+                _read_timeout = timeout if timeout is not None else 600.0
+                resp = _requests.post(
+                    _raw_endpoint,
+                    headers=_raw_headers,
+                    json=chat_params,
+                    timeout=(10.0, _read_timeout),
+                )
+                if resp.status_code != 200:
+                    raise RuntimeError(
+                        f"Error code: {resp.status_code} - {resp.text[:500]}"
+                    )
+                return resp.json()
+
+            new_tasks = [
+                asyncio.create_task(asyncio.to_thread(_sync_chat_completion))
+                for _ in range(total_needed)
+            ]
+
         try:
             raw_new = await asyncio.gather(*new_tasks)
+            
+            # If not OpenAI, wrap raw JSON response to mimic Response API object
+            if not is_openai:
+                class LegacyResponseWrapper:
+                    def __init__(self, data):
+                        self._raw = data
+                        self.status = "completed"
+                        self.id = data.get("id", "")
+                        content = ""
+                        try:
+                            content = data["choices"][0]["message"]["content"] or ""
+                        except (KeyError, IndexError, TypeError):
+                            pass
+                        self.output_text = content
+                
+                raw_new = [LegacyResponseWrapper(r) for r in raw_new]
         except asyncio.CancelledError:
             for t in new_tasks:
                 t.cancel()
