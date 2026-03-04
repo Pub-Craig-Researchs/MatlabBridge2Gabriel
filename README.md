@@ -78,7 +78,7 @@ Edit `api_config.json` to add your API keys:
 ```matlab
 attrs = struct('Safety', 'How safe is this action? (0-100)');
 data = {'Walking across the street', 'Jumping off a cliff'};
-results = GabrielBridge(data, attrs, 'Task', 'rate');
+results = GabrielBridge(data, attrs, 'Task', 'rate', 'ProfileName', 'YOUR_ProfileName', 'json_mode', false, 'NRuns', YOUR_N_RUNS);
 ```
 
 ### 🏷️ Topic Classification
